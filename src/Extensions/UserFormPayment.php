@@ -2,25 +2,32 @@
 
 namespace A2nt\UserFormsPayments\Extensions;
 
-use SilverStripe\Control\Controller;
+use SilverStripe\Core\Extension;
 use SilverStripe\Omnipay\Model\Payment;
-use SilverStripe\ORM\DataExtension;
 use SilverStripe\UserForms\Model\Submission\SubmittedForm;
 
-class UserFormPayment extends DataExtension
+/**
+ * @extends Extension<Payment&static>
+ */
+class UserFormPayment extends Extension
 {
     private static $has_one = [
         'SubmittedForm' => SubmittedForm::class,
     ];
 
-    public function onCaptured($response)
+    protected function onCaptured($response): void
     {
-    	$obj = $this->owner;
-    	$form = $obj->SubmittedForm();
+        /** @var Payment $obj */
+        $obj = $this->owner;
+        $form = $obj->SubmittedForm();
 
-    	if($form->Amount === $form->TotalPaidOrAuthorized()) {
-    		$form->setField('PaymentStatus', 'Paid');
-    		$form->write();
-	    }
+        if (!$form->exists()) {
+            return;
+        }
+
+        if ((float) $form->Amount === (float) $form->TotalPaidOrAuthorized()) {
+            $form->setField('PaymentStatus', 'Paid');
+            $form->write();
+        }
     }
 }

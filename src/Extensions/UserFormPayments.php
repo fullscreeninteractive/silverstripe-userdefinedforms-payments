@@ -1,9 +1,10 @@
 <?php
 
-
 namespace A2nt\UserFormsPayments\Extensions;
 
 use A2nt\UserFormsPayments\Models\PaymentConditionRule;
+use DNADesign\ElementalUserForms\Model\ElementForm;
+use SilverStripe\Core\Extension;
 use SilverStripe\Forms\CurrencyField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
@@ -13,13 +14,14 @@ use SilverStripe\Forms\GridField\GridFieldConfig;
 use SilverStripe\Forms\GridField\GridFieldDeleteAction;
 use SilverStripe\Forms\GridField\GridFieldToolbarHeader;
 use SilverStripe\Forms\LiteralField;
-use SilverStripe\Forms\NumericField;
 use SilverStripe\Forms\TextField;
-use SilverStripe\ORM\DataExtension;
 use Symbiote\GridFieldExtensions\GridFieldAddNewInlineButton;
 use Symbiote\GridFieldExtensions\GridFieldEditableColumns;
 
-class UserFormPayments extends DataExtension
+/**
+ * @extends Extension<ElementForm&static>
+ */
+class UserFormPayments extends Extension
 {
     private static $db = [
         'PaymentRulesCondition' => 'Enum("Never,And,Or","Never")',
@@ -31,28 +33,28 @@ class UserFormPayments extends DataExtension
 
     /**
      * Generate a gridfield config for editing filter rules
-     *
-     * @return GridFieldConfig
      */
-    protected function getRulesConfig()
+    protected function getRulesConfig(): GridFieldConfig
     {
         $formFields = $this->owner->Fields();
 
         $config = GridFieldConfig::create()
             ->addComponents(
-                new GridFieldButtonRow('before'),
-                new GridFieldToolbarHeader(),
-                new GridFieldAddNewInlineButton(),
-                new GridFieldDeleteAction(),
-                $columns = new GridFieldEditableColumns()
+                GridFieldButtonRow::create('before'),
+                GridFieldToolbarHeader::create(),
+                GridFieldAddNewInlineButton::create(),
+                GridFieldDeleteAction::create(),
+                $columns = GridFieldEditableColumns::create()
             );
 
-        $columns->setDisplayFields(array(
+        $columns->setDisplayFields([
             'ConditionFieldID' => function ($record, $column, $grid) use ($formFields) {
                 return DropdownField::create($column, false, $formFields->map('ID', 'Title'));
             },
             'ConditionOption' => function ($record, $column, $grid) {
-                $options = PaymentConditionRule::config()->condition_options;
+                /** @var array<string, string> $options */
+                $options = PaymentConditionRule::config()->get('condition_options');
+
                 return DropdownField::create($column, false, $options);
             },
             'ConditionValue' => function ($record, $column, $grid) {
@@ -61,25 +63,23 @@ class UserFormPayments extends DataExtension
             'Amount' => function ($record, $column, $grid) {
                 return CurrencyField::create($column);
             },
-        ));
+        ]);
 
         return $config;
     }
 
-    public function updateCMSFields(FieldList $fields)
+    protected function updateCMSFields(FieldList $fields)
     {
-        parent::updateCMSFields($fields);
-
         $fields->removeByName('PaymentRules');
 
         $grid = GridField::create(
             'PaymentRules',
-            _t(__CLASS__.'.PaymentRules', 'Payment Rules'),
+            _t(__CLASS__ . '.PaymentRules', 'Payment Rules'),
             $this->owner->PaymentRules(),
             $this->getRulesConfig()
         );
         $grid->setDescription(_t(
-            __CLASS__ .'.PaymentsDescription',
+            __CLASS__ . '.PaymentsDescription',
             'Payment will be required if the custom rules are met. If no rules are defined, '
             . 'payment will not be required.'
         ));
@@ -88,14 +88,14 @@ class UserFormPayments extends DataExtension
             LiteralField::create(
                 'PaymentsNote',
                 '<div class="alert alert-info">'
-                ._t(__CLASS__ .'.PaymentsNote', 'Add conditional logic to require payment. Note Amount fields must be Numeric.')
-                .'</div>'
+                . _t(__CLASS__ . '.PaymentsNote', 'Add conditional logic to require payment. Note Amount fields must be Numeric.')
+                . '</div>'
             ),
             DropdownField::create(
                 'PaymentRulesCondition',
-                _t(__CLASS__.'.RequireCondition', 'Require Condition'),
+                _t(__CLASS__ . '.RequireCondition', 'Require Condition'),
                 [
-                    'Never' => _t(__CLASS__ .'.RequireIfNever', 'Never'),
+                    'Never' => _t(__CLASS__ . '.RequireIfNever', 'Never'),
                     'Or' => _t(
                         'SilverStripe\\UserForms\\Model\\UserDefinedForm.SENDIFOR',
                         'Any conditions are true'
@@ -103,14 +103,16 @@ class UserFormPayments extends DataExtension
                     'And' => _t(
                         'SilverStripe\\UserForms\\Model\\UserDefinedForm.SENDIFAND',
                         'All conditions are true'
-                    )
+                    ),
                 ]
             ),
-            $grid
+            $grid,
         ]);
 
         $fields
             ->fieldByName('Root.PaymentRules')
             ->setTitle(_t(__CLASS__ . '.PaymentsTab', 'Payment Rules'));
+
+        return $fields;
     }
 }
