@@ -25,7 +25,7 @@ class UserFormsPaymentController extends ContentController
         'pay',
         'complete',
         'canceled',
-        'Form',
+        'PaymentForm',
     ];
 
     /**
@@ -130,8 +130,23 @@ class UserFormsPaymentController extends ContentController
             return $this->httpError(404);
         }
 
-        return $this->render();
+        $gateway = $this->getGateway();
+
+        if (GatewayInfo::isOffsite($gateway)) {
+            if ((float) $obj->Amount <= 0) {
+                return $this->httpError(400);
+            }
+
+            $response = $this->processPayment($obj);
+
+            return $response->redirectOrRespond();
+        }
+
+        return [
+            'Form' => $this->Form(),
+        ];
     }
+
 
     protected function getGateway(): string
     {
@@ -140,7 +155,8 @@ class UserFormsPaymentController extends ContentController
         return array_key_first($gateways);
     }
 
-    public function Form()
+
+    public function PaymentForm(): Form
     {
         $obj = $this->getPayableObject();
 
@@ -167,7 +183,7 @@ class UserFormsPaymentController extends ContentController
 
         return Form::create(
             $this,
-            'Form',
+            'PaymentForm',
             $fields,
             FieldList::create(FormAction::create(
                 'doSubmit',
@@ -176,6 +192,7 @@ class UserFormsPaymentController extends ContentController
             RequiredFieldsValidator::create(['ID', 'OtherID'])
         );
     }
+
 
     /**
      * @param array<string, mixed> $data
@@ -193,11 +210,19 @@ class UserFormsPaymentController extends ContentController
         $payment->write();
 
         $items = $obj->getPaymentItems();
-        $data['items'] = $items;
+
+        if ($items) {
+            $data['items'] = $items;
+        } else {
+            $data['description'] = $obj->Title;
+            $data['statement_descriptor'] = $obj->Title;
+        }
 
         $data['rp_invoice_id'] = $obj->OrderID;
         $data['custom'] = $obj->OrderID;
         $data['invoice'] = $obj->OrderID;
+
+        $this->extend('updateProcessPaymentData', $data, $obj);
 
         return ServiceFactory::create()
             ->getService($payment, ServiceFactory::INTENT_PURCHASE)

@@ -21,18 +21,26 @@ use Symbiote\GridFieldExtensions\GridFieldEditableColumns;
 /**
  * @extends Extension<ElementForm&static>
  */
-class UserFormPayments extends Extension
+class FormHasPaymentsExtension extends Extension
 {
-    private static $db = [
+    private static array $db = [
         'PaymentRulesCondition' => 'Enum("Never,And,Or","Never")',
     ];
 
-    private static $has_many = [
+    private static array $has_many = [
         'PaymentRules' => PaymentConditionRule::class,
     ];
 
+    private static array $cascade_duplicates = [
+        'PaymentRules',
+    ];
+
+    private static array $cascade_deletes = [
+        'PaymentRules',
+    ];
+
     /**
-     * Generate a gridfield config for editing filter rules
+     * Generate a {@link GridFieldConfig} config for editing filter rules
      */
     protected function getRulesConfig(): GridFieldConfig
     {
@@ -62,6 +70,9 @@ class UserFormPayments extends Extension
             },
             'Amount' => function ($record, $column, $grid) {
                 return CurrencyField::create($column);
+            },
+            'StatementDescriptor' => function ($record, $column, $grid) {
+                return TextField::create($column)->setAttribute('placeholder', 'Statement Descriptor');
             },
         ]);
 

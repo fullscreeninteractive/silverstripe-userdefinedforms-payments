@@ -34,6 +34,7 @@ class PaymentConditionRule extends DataObject
         'ConditionOption' => 'Enum("IsBlank,IsNotBlank,Equals,NotEquals,ValueLessThan,ValueLessThanEqual,ValueGreaterThan,ValueGreaterThanEqual,Summarize")',
         'ConditionValue' => 'Varchar',
         'Amount' => 'Currency',
+        'StatementDescriptor' => 'Varchar(255)',
     ];
 
     private static $has_one = [

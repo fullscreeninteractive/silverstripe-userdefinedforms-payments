@@ -1,0 +1,7 @@
+/**
+ * Styles for the standalone userforms payment step (UserFormsPaymentController::pay).
+ */
+
+.userforms-payment--pay {
+  max-width: 40rem;
+}

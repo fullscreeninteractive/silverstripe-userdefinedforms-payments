@@ -46,6 +46,11 @@
         "lint": "phpcs --standard=PSR12 src",
         "lint:fix": "phpcbf --standard=PSR12 src"
     },
+    "extra": {
+        "expose": [
+            "css"
+        ]
+    },
     "minimum-stability": "stable",
     "prefer-stable": true
 }

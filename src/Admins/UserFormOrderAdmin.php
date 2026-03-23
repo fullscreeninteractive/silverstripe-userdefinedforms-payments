@@ -6,7 +6,7 @@ use SilverStripe\Admin\ModelAdmin;
 use SilverStripe\Model\List\SS_List;
 use SilverStripe\UserForms\Model\Submission\SubmittedForm;
 
-class UserFormOrders extends ModelAdmin
+class UserFormOrderAdmin extends ModelAdmin
 {
     private static array $managed_models = [
         SubmittedForm::class,
@@ -15,6 +15,8 @@ class UserFormOrders extends ModelAdmin
     private static string $url_segment = 'orders';
 
     private static string $menu_title = 'Form Orders';
+
+    private static string $menu_icon_class = 'font-icon-p-cart';
 
     public function getList(): SS_List
     {

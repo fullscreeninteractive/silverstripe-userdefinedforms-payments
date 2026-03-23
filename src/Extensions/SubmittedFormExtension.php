@@ -7,6 +7,7 @@ use DNADesign\ElementalUserForms\Model\ElementForm;
 use SilverStripe\Core\Extension;
 use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Forms\FieldList;
+use SilverStripe\Forms\LiteralField;
 use SilverStripe\UserForms\Model\EditableFormField;
 use SilverStripe\UserForms\Model\EditableFormField\EditableNumericField;
 use SilverStripe\UserForms\Model\Submission\SubmittedForm;
@@ -14,10 +15,10 @@ use SilverStripe\UserForms\Model\Submission\SubmittedForm;
 /**
  * @extends Extension<SubmittedForm&static>
  */
-class UserFormPaymentsForm extends Extension
+class SubmittedFormExtension extends Extension
 {
-    private static $db = [
-        'OrderID' => 'Varchar',
+    private static array $db = [
+        'OrderID' => 'Varchar(200)',
         'Amount' => 'Currency',
         'PaymentStatus' => 'Enum("Not Required,Unpaid,Paid","Not Required")',
     ];
@@ -45,7 +46,7 @@ class UserFormPaymentsForm extends Extension
         $obj = $this->owner;
         $data = $this->collectData();
 
-        /** @var ElementForm $userForm */
+        /** @var ElementForm|UserDefinedForm $userForm */
         $userForm = $obj->Parent();
         $paymentRules = $userForm->PaymentRules();
 
@@ -109,6 +110,8 @@ class UserFormPaymentsForm extends Extension
             /** @var EditableFormField $field */
             $field = $rule->ConditionField();
 
+            $description = $rule->StatementDescriptor ?? $field->Title;
+
             if (
                 $field->ClassName === EditableNumericField::class
                 && $rule->ConditionOption === 'Summarize'
@@ -116,7 +119,8 @@ class UserFormPaymentsForm extends Extension
                 $amount = $data[$field->Name];
                 if ((float) $amount > 0) {
                     $items[] = [
-                        'name' => $field->Title,
+                        'name' => $description,
+                        'description' => $description,
                         'price' => $amount,
                         'quantity' => 1,
                     ];
@@ -126,7 +130,8 @@ class UserFormPaymentsForm extends Extension
                 $amount = $rule->Amount;
                 if ((float) $amount > 0) {
                     $items[] = [
-                        'name' => $field->Title,
+                        'name' => $description,
+                        'description' => $description,
                         'price' => $amount,
                         'quantity' => 1,
                     ];
@@ -152,6 +157,27 @@ class UserFormPaymentsForm extends Extension
                 ->setReadonly(true);
         }
 
+        // if the order is unpaid, add a link with the payment link
+        if ($this->owner->PaymentStatus === 'Unpaid') {
+            $fields->insertAfter(
+                'PaymentStatus',
+                LiteralField::create(
+                    'PaymentLink',
+                    sprintf('<p><a target="_blank" href="%s">Pay for this order</a></p>', $this->getPaymentLink())
+                ),
+            );
+        }
+
         return $fields;
+    }
+
+
+    public function getPaymentLink(): string
+    {
+        return singleton(UserFormsPaymentController::class)->Link(sprintf(
+            '/pay/SubmittedForm/%s?token=%s',
+            $this->owner->ID,
+            $this->owner->OrderID
+        ));
     }
 }

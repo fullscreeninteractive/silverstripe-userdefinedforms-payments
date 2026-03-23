@@ -16,20 +16,20 @@ SilverStripe\UserForms\Model\Submission\SubmittedForm:
     - Amount
   extensions:
     - SilverStripe\Omnipay\Extensions\Payable
-    - A2nt\UserFormsPayments\Extensions\UserFormPaymentsForm
+    - A2nt\UserFormsPayments\Extensions\SubmittedFormExtension
 
 SilverStripe\Omnipay\Model\Payment:
   extensions:
-    - A2nt\UserFormsPayments\Extensions\UserFormPayment
+    - A2nt\UserFormsPayments\Extensions\PaymentExtension
 
 DNADesign\ElementalUserForms\Model\ElementForm:
   extensions:
-    - A2nt\UserFormsPayments\Extensions\UserFormPayments
+    - A2nt\UserFormsPayments\Extensions\FormHasPaymentsExtension
 
-#SilverStripe\UserForms\Model\UserDefinedForm:
+# SilverStripe\UserForms\Model\UserDefinedForm:
 #  extensions:
-#    - A2nt\UserFormsPayments\Extensions\UserFormPayments
-#
+#    - A2nt\UserFormsPayments\Extensions\FormHasPaymentsExtension
+
 # Rewrite has_one value of Payment Condition Rules
 #A2nt\UserFormsPayments\Models\PaymentConditionRule:
 #  has_one:

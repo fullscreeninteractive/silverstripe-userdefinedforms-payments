@@ -9,9 +9,9 @@ use SilverStripe\UserForms\Model\Submission\SubmittedForm;
 /**
  * @extends Extension<Payment&static>
  */
-class UserFormPayment extends Extension
+class PaymentExtension extends Extension
 {
-    private static $has_one = [
+    private static array $has_one = [
         'SubmittedForm' => SubmittedForm::class,
     ];
 
@@ -19,6 +19,8 @@ class UserFormPayment extends Extension
     {
         /** @var Payment $obj */
         $obj = $this->owner;
+
+        /** @var SubmittedForm $form */
         $form = $obj->SubmittedForm();
 
         if (!$form->exists()) {
