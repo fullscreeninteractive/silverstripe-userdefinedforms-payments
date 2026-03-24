@@ -1,7 +1,159 @@
 /**
  * Styles for the standalone userforms payment step (UserFormsPaymentController::pay).
+ * Layout and tone inspired by Stripe’s Payment Element docs (clean card, bold labels).
  */
 
+:root {
+  --payment-page-bg: #f6f9fc;
+  --payment-card-bg: #ffffff;
+  --payment-text: #30313d;
+  --payment-text-muted: #6c7688;
+  --payment-border: #e6ebf1;
+  --payment-radius: 12px;
+  --payment-shadow: 0 12px 32px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --payment-accent: #0a2540;
+}
+
+html {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--payment-text);
+  background: var(--payment-page-bg);
+}
+
 .userforms-payment--pay {
-  max-width: 40rem;
+  width: 100%;
+  max-width: 28rem;
+  padding: 2rem 1.75rem;
+  background: var(--payment-card-bg);
+  border-radius: var(--payment-radius);
+  box-shadow: var(--payment-shadow);
+  border: 1px solid var(--payment-border);
+}
+
+.userforms-payment--pay form {
+  margin: 0;
+}
+
+/* SilverStripe / Omnipay fields */
+.userforms-payment--pay .field {
+  margin-bottom: 1.25rem;
+}
+
+.userforms-payment--pay .field:last-of-type,
+.userforms-payment--pay .field:last-child {
+  margin-bottom: 0;
+}
+
+.userforms-payment--pay label.left,
+.userforms-payment--pay label.form-label.left,
+.userforms-payment--pay .field label:not(.checkbox) {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+  color: var(--payment-accent);
+}
+
+.userforms-payment--pay .field .description,
+.userforms-payment--pay .field .help {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--payment-text-muted);
+}
+
+.userforms-payment--pay input.text,
+.userforms-payment--pay input[type="email"],
+.userforms-payment--pay input[type="tel"],
+.userforms-payment--pay select,
+.userforms-payment--pay textarea {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--payment-text);
+  background: #fff;
+  border: 1px solid var(--payment-border);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.userforms-payment--pay input.text:focus,
+.userforms-payment--pay input[type="email"]:focus,
+.userforms-payment--pay input[type="tel"]:focus,
+.userforms-payment--pay select:focus,
+.userforms-payment--pay textarea:focus {
+  outline: none;
+  border-color: #635bff;
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.15);
+}
+
+/* Stripe Payment Element (Omnipay mount) */
+.userforms-payment--pay .field.stripe-payment-element {
+  margin-bottom: 1.5rem;
+}
+
+.userforms-payment--pay .field.stripe-payment-element > label.form-label.left,
+.userforms-payment--pay .field.stripe-payment-element > label.left {
+  margin-bottom: 0.65rem;
+}
+
+.userforms-payment--pay .stripe-payment-element__mount {
+  min-height: 2.5rem;
+  padding: 0.25rem 0;
+}
+
+/* Submit */
+.userforms-payment--pay .Actions {
+  margin-top: 1.75rem;
+  padding-top: 0;
+}
+
+.userforms-payment--pay .Actions input[type="submit"],
+.userforms-payment--pay .Actions button[type="submit"],
+.userforms-payment--pay .Actions .action {
+  width: 100%;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--payment-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.12);
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.userforms-payment--pay .Actions input[type="submit"]:hover,
+.userforms-payment--pay .Actions button[type="submit"]:hover,
+.userforms-payment--pay .Actions .action:hover {
+  background: #1a3a5c;
+}
+
+.userforms-payment--pay .Actions input[type="submit"]:active,
+.userforms-payment--pay .Actions button[type="submit"]:active,
+.userforms-payment--pay .Actions .action:active {
+  transform: translateY(1px);
 }

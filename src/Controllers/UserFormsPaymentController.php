@@ -143,7 +143,8 @@ class UserFormsPaymentController extends ContentController
         }
 
         return [
-            'Form' => $this->Form(),
+            'Form' => $this->PaymentForm(),
+            'Title' => _t('UserFormsPaymentController.PAY_TITLE', 'Pay Now'),
         ];
     }
 
