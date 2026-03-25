@@ -24,6 +24,7 @@ use Symbiote\GridFieldExtensions\GridFieldEditableColumns;
 class FormHasPaymentsExtension extends Extension
 {
     private static array $db = [
+        'CurrencyCode' => 'Varchar(3)',
         'PaymentRulesCondition' => 'Enum("Never,And,Or","Never")',
     ];
 
@@ -117,6 +118,8 @@ class FormHasPaymentsExtension extends Extension
                     ),
                 ]
             ),
+            TextField::create('CurrencyCode', 'Currency Code')->setDescription('ISO 4217 currency code, e.g. USD, EUR, GBP, etc.')
+                ->setAttribute('placeholder', 'USD'),
             $grid,
         ]);
 

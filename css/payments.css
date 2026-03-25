@@ -52,6 +52,12 @@ body {
   margin: 0;
 }
 
+.userforms-payment--pay fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
 /* SilverStripe / Omnipay fields */
 .userforms-payment--pay .field {
   margin-bottom: 1.25rem;
@@ -124,14 +130,28 @@ body {
 }
 
 /* Submit */
-.userforms-payment--pay .Actions {
+.userforms-payment--pay .btn-toolbar {
   margin-top: 1.75rem;
   padding-top: 0;
 }
 
-.userforms-payment--pay .Actions input[type="submit"],
-.userforms-payment--pay .Actions button[type="submit"],
-.userforms-payment--pay .Actions .action {
+.userforms-payment--pay .alert-danger,
+.userforms-payment--pay .message.error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 0.75rem 1.25rem;
+  margin-bottom: 1.25rem;
+  font-family: monospace;
+}
+
+.userforms-payment--pay .alert-danger p {
+  margin: 0;
+}
+
+.userforms-payment--pay .btn-toolbar input[type="submit"],
+.userforms-payment--pay .btn-toolbar button[type="submit"],
+.userforms-payment--pay .btn-toolbar .action {
   width: 100%;
   padding: 0.75rem 1.25rem;
   font-size: 1rem;
@@ -146,14 +166,14 @@ body {
   transition: background 0.15s ease, transform 0.05s ease;
 }
 
-.userforms-payment--pay .Actions input[type="submit"]:hover,
-.userforms-payment--pay .Actions button[type="submit"]:hover,
-.userforms-payment--pay .Actions .action:hover {
+.userforms-payment--pay .btn-toolbar input[type="submit"]:hover,
+.userforms-payment--pay .btn-toolbar button[type="submit"]:hover,
+.userforms-payment--pay .btn-toolbar .action:hover {
   background: #1a3a5c;
 }
 
-.userforms-payment--pay .Actions input[type="submit"]:active,
-.userforms-payment--pay .Actions button[type="submit"]:active,
-.userforms-payment--pay .Actions .action:active {
+.userforms-payment--pay .btn-toolbar input[type="submit"]:active,
+.userforms-payment--pay .btn-toolbar button[type="submit"]:active,
+.userforms-payment--pay .btn-toolbar .action:active {
   transform: translateY(1px);
 }

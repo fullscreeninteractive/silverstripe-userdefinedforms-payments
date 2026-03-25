@@ -1,4 +1,4 @@
-<doctype html>
+<!doctype html>
 <html>
 <head>
     <% base_tag %>

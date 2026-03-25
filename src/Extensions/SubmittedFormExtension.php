@@ -20,6 +20,7 @@ class SubmittedFormExtension extends Extension
     private static array $db = [
         'OrderID' => 'Varchar(200)',
         'Amount' => 'Currency',
+        'CurrencyCode' => 'Varchar(3)',
         'PaymentStatus' => 'Enum("Not Required,Unpaid,Paid","Not Required")',
     ];
 
@@ -40,6 +41,15 @@ class SubmittedFormExtension extends Extension
         return $data;
     }
 
+    public function onBeforeWrite()
+    {
+        if (!$this->owner->CurrencyCode) {
+            $obj = $this->owner;
+            $obj->CurrencyCode = $obj->Parent()->CurrencyCode ?? 'USD';
+        }
+    }
+
+
     protected function updateAfterProcess(array &$emailData, array &$attachments): void
     {
         /** @var SubmittedForm $obj */
@@ -52,6 +62,7 @@ class SubmittedFormExtension extends Extension
 
         $once = ($userForm->PaymentRulesCondition === 'Or');
         $amount = 0;
+
         foreach ($paymentRules as $rule) {
             $field = $rule->ConditionField();
 
@@ -76,6 +87,8 @@ class SubmittedFormExtension extends Extension
             $obj->PaymentStatus = 'Unpaid';
             $obj->Amount = $amount;
         }
+
+        $obj->CurrencyCode = $userForm->CurrencyCode ?? 'USD';
 
         if ($obj->Amount > 0) {
             $obj->OrderID = 'O-' . $obj->ID . '-' . strtoupper(substr(uniqid('', true), 0, 4));
@@ -149,7 +162,7 @@ class SubmittedFormExtension extends Extension
 
     protected function updateCMSFields(FieldList $fields)
     {
-        $readOnlyFields = ['OrderID', 'Amount', 'PaymentStatus'];
+        $readOnlyFields = ['OrderID', 'Amount', 'PaymentStatus', 'CurrencyCode'];
 
         foreach ($readOnlyFields as $key) {
             $fields

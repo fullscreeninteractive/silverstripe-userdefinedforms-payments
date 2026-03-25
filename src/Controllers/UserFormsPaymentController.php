@@ -21,6 +21,8 @@ class UserFormsPaymentController extends ContentController
 {
     private static $url_segment = '/userpayment';
 
+    private static string $default_currency_code = 'USD';
+
     private static $allowed_actions = [
         'pay',
         'complete',
@@ -60,6 +62,9 @@ class UserFormsPaymentController extends ContentController
 
 
     /**
+     * Get the payable object from the request either in the URL or in the
+     * request params.
+     *
      * @param array<string, mixed> $newParams
      */
     public function getPayableObject(array $newParams = []): SubmittedForm|false
@@ -76,8 +81,26 @@ class UserFormsPaymentController extends ContentController
         $class = $params['ID'] ?? null;
         $id = $params['OtherID'] ?? null;
 
+        $requestParams = $request->requestVars();
+
         if (!$id || !$class || !array_key_exists($class, $allowed)) {
-            return false;
+            // look for the token and id in the request
+            $token = $requestParams['PayableObjectToken'] ?? null;
+            $id = $requestParams['PayableObjectID'] ?? null;
+
+            if (!$token || !$id) {
+                return false;
+            }
+
+            $obj = SubmittedForm::get()->filter('OrderID', $token)->first();
+
+            if (!$obj) {
+                return false;
+            }
+
+            $this->object = $obj;
+
+            return $this->object;
         }
 
         $class = $this->getPayableObjectClass($class);
@@ -166,21 +189,27 @@ class UserFormsPaymentController extends ContentController
         }
 
         $gateway = $this->getGateway();
-
         switch ($gateway) {
             case 'PayPal_Express':
+                if (!$obj) {
+                    return $this->httpError(404);
+                }
+
                 $response = $this->processPayment($obj);
                 $response->redirectOrRespond()->output();
                 exit();
         }
 
         $factory = GatewayFieldsFactory::create($gateway);
+        $factory->setPaymentAmount((float) $obj->Amount);
+        $factory->setPaymentCurrency($obj->CurrencyCode);
+
         $fields = $factory->getFields();
 
-        $class = $this->getShortPayableObjectName($obj::class);
+        $this->extend('updateGatewayFieldsFactory', $factory, $obj);
 
-        $fields->push(HiddenField::create('ID', $class));
-        $fields->push(HiddenField::create('OtherID', $obj->getField('ID')));
+        $fields->push(HiddenField::create('PayableObjectToken', '', $obj ? $obj->OrderID : null));
+        $fields->push(HiddenField::create('PayableObjectID', '', $obj ? $obj->ID : null));
 
         return Form::create(
             $this,
@@ -203,7 +232,7 @@ class UserFormsPaymentController extends ContentController
         $gateway = $this->getGateway();
 
         $payment = Payment::create()
-            ->init($gateway, $obj->Amount, 'USD')
+            ->init($gateway, $obj->Amount, $obj->CurrencyCode ?? static::config()->get('default_currency_code'))
             ->setSuccessUrl($this->Link('complete') . '/' . $this->getShortPayableObjectName($obj::class) . '/' . $obj->ID)
             ->setFailureUrl($this->Link('canceled') . '/' . $this->getShortPayableObjectName($obj::class) . '/' . $obj->ID);
 
@@ -225,8 +254,10 @@ class UserFormsPaymentController extends ContentController
 
         $this->extend('updateProcessPaymentData', $data, $obj);
 
-        return ServiceFactory::create()
-            ->getService($payment, ServiceFactory::INTENT_PURCHASE)
+        $service = ServiceFactory::create()
+            ->getService($payment, ServiceFactory::INTENT_PURCHASE);
+
+        return $service
             ->initiate($data);
     }
 
