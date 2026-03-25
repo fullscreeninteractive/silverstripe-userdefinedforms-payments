@@ -9,7 +9,18 @@
 </head>
 <body>
 <div class="userforms-payment userforms-payment--pay">
+    <% if $Content %>
+        <div class="userforms-payment__content">
+            <h1 class="userforms-payment__title">$Title</h1>
+            $Content
+        </div>
+    <% end_if %>
+
     $Form
+
+    <% if $BackButton %>
+        <a href="$BackButtonLink" class="userforms-payment__back-button">$BackButton</a>
+    <% end_if %>
 </div>
 </body>
 </html>

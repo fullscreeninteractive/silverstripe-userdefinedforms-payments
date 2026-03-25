@@ -23,6 +23,8 @@ class UserFormsPaymentController extends ContentController
 
     private static string $default_currency_code = 'USD';
 
+    private static string $payment_intent = 'purchase';
+
     private static $allowed_actions = [
         'pay',
         'complete',
@@ -131,7 +133,7 @@ class UserFormsPaymentController extends ContentController
         return $this->redirect($page->Link('finished'));
     }
 
-    public function canceled(): HTTPResponse
+    public function canceled()
     {
         /** @var SubmittedForm $obj */
         $obj = $this->getPayableObject();
@@ -140,10 +142,16 @@ class UserFormsPaymentController extends ContentController
             return $this->httpError(404);
         }
 
-        // direct the user to the thank you page on the submitted form page
         $page = $obj->Parent();
-        return $this->redirect($page->Link());
+
+        return [
+            'Title' => _t('UserFormsPaymentController.CANCELED_TITLE', 'Payment Canceled'),
+            'Content' => _t('UserFormsPaymentController.CANCELED_CONTENT', 'Your payment has been canceled.'),
+            'BackButton' => _t('UserFormsPaymentController.CANCELED_BACK_BUTTON', 'Back to the form'),
+            'BackButtonLink' => $page->Link(),
+        ];
     }
+
 
     public function pay()
     {
@@ -160,9 +168,7 @@ class UserFormsPaymentController extends ContentController
                 return $this->httpError(400);
             }
 
-            $response = $this->processPayment($obj);
-
-            return $response->redirectOrRespond();
+            return $this->processPayment($obj);
         }
 
         return [
@@ -180,7 +186,7 @@ class UserFormsPaymentController extends ContentController
     }
 
 
-    public function PaymentForm(): Form
+    public function PaymentForm(): Form|HTTPResponse
     {
         $obj = $this->getPayableObject();
 
@@ -195,9 +201,7 @@ class UserFormsPaymentController extends ContentController
                     return $this->httpError(404);
                 }
 
-                $response = $this->processPayment($obj);
-                $response->redirectOrRespond()->output();
-                exit();
+                return $this->processPayment($obj);
         }
 
         $factory = GatewayFieldsFactory::create($gateway);
@@ -255,10 +259,11 @@ class UserFormsPaymentController extends ContentController
         $this->extend('updateProcessPaymentData', $data, $obj);
 
         $service = ServiceFactory::create()
-            ->getService($payment, ServiceFactory::INTENT_PURCHASE);
+            ->getService($payment, static::config()->get('payment_intent') ?? ServiceFactory::INTENT_PURCHASE);
 
-        return $service
-            ->initiate($data);
+        $response = $service->initiate($data);
+
+        return $response->redirectOrRespond();
     }
 
     /**
@@ -273,9 +278,7 @@ class UserFormsPaymentController extends ContentController
         }
 
         if ($obj->Amount > 0) {
-            $response = $this->processPayment($obj, $data);
-
-            return $response->redirectOrRespond();
+            return $this->processPayment($obj, $data);
         }
 
         return HTTPResponse::create('ERROR 00-' . __CLASS__ . '_' . __FUNCTION__ . ': wrong amount', 500);

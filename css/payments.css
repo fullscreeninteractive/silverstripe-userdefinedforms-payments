@@ -177,3 +177,30 @@ body {
 .userforms-payment--pay .btn-toolbar .action:active {
   transform: translateY(1px);
 }
+
+.userforms-payment__back-button {
+  display: inline-block;
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--payment-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(10, 37, 64, 0.12);
+  text-decoration: none;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+
+.userforms-payment__title {
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-top: 0;
+  color: var(--payment-accent);
+}
+
+.userforms-payment__content {
+  margin-bottom: 1.5rem;
+}
