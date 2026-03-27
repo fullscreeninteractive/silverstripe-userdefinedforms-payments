@@ -75,6 +75,10 @@ final class StripeCheckoutPaymentProcessor implements PaymentProcessorInterface
             $sessionPayload['customer_email'] = $customerEmail;
         }
 
+        if (self::gatewayAllowsPromotionCodes($gateway)) {
+            $sessionPayload['allow_promotion_codes'] = true;
+        }
+
         try {
             $session = Session::create(
                 $sessionPayload,
@@ -160,13 +164,7 @@ final class StripeCheckoutPaymentProcessor implements PaymentProcessorInterface
      */
     private static function getGatewayParameters(string $gateway): ?array
     {
-        $candidates = [
-            $gateway,
-            '\\' . ltrim($gateway, '\\'),
-            ltrim($gateway, '\\'),
-        ];
-
-        foreach ($candidates as $key) {
+        foreach (self::gatewayConfigKeyCandidates($gateway) as $key) {
             $params = GatewayInfo::getParameters($key);
             if (is_array($params)) {
                 return $params;
@@ -174,6 +172,48 @@ final class StripeCheckoutPaymentProcessor implements PaymentProcessorInterface
         }
 
         return null;
+    }
+
+    /**
+     * Reads {@link GatewayInfo} for this gateway (supports keys with or without a leading backslash).
+     *
+     * @return mixed null if unset
+     */
+    private static function getGatewayConfigSetting(string $gateway, string $key): mixed
+    {
+        foreach (self::gatewayConfigKeyCandidates($gateway) as $gw) {
+            $value = GatewayInfo::getConfigSetting($gw, $key);
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function gatewayConfigKeyCandidates(string $gateway): array
+    {
+        return [
+            $gateway,
+            '\\' . ltrim($gateway, '\\'),
+            ltrim($gateway, '\\'),
+        ];
+    }
+
+    /**
+     * @see https://stripe.com/docs/api/checkout/sessions/create#create_checkout_session-allow_promotion_codes
+     */
+    private static function gatewayAllowsPromotionCodes(string $gateway): bool
+    {
+        $value = self::getGatewayConfigSetting($gateway, 'allow_promotion_codes');
+
+        return $value === true
+            || $value === 1
+            || $value === '1'
+            || strtolower((string) $value) === 'true';
     }
 
     /**

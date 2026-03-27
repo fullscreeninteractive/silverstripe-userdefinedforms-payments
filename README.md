@@ -47,3 +47,9 @@ When the form’s **Payment gateway** (or site default) is `Omnipay\Stripe\Check
 The Composer constraint is `"stripe/stripe-php": "^13 || ^14"` (either major line satisfies the requirement).
 
 Configure the secret key the same way as Omnipay Stripe: `SilverStripe\Omnipay\GatewayInfo` parameters for `\Omnipay\Stripe\CheckoutGateway` (e.g. `apiKey`), or fall back to the `STRIPE_SK_KEY` environment variable (see `StripeCheckoutPaymentProcessor::getStripeSecretKey()`).
+
+Optional gateway settings (same `GatewayInfo` block for `\Omnipay\Stripe\CheckoutGateway`):
+
+| Key | Effect |
+|-----|--------|
+| `allow_promotion_codes` | When `true`, `Session::create` sets `allow_promotion_codes: true` so customers see “Add promotion code” on Checkout. Create coupons/promotion codes in the [Stripe Dashboard](https://dashboard.stripe.com/coupons) first. |
