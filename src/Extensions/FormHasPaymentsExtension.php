@@ -5,6 +5,7 @@ namespace A2nt\UserFormsPayments\Extensions;
 use A2nt\UserFormsPayments\Models\PaymentConditionRule;
 use DNADesign\ElementalUserForms\Model\ElementForm;
 use SilverStripe\Core\Extension;
+use SilverStripe\Omnipay\GatewayInfo;
 use SilverStripe\Forms\CurrencyField;
 use SilverStripe\Forms\DropdownField;
 use SilverStripe\Forms\FieldList;
@@ -26,6 +27,8 @@ class FormHasPaymentsExtension extends Extension
     private static array $db = [
         'CurrencyCode' => 'Varchar(3)',
         'PaymentRulesCondition' => 'Enum("Never,And,Or","Never")',
+        /** @see GatewayInfo::getSupportedGateways() keys (Omnipay gateway class names) */
+        'Gateway' => 'Varchar(128)',
     ];
 
     private static array $has_many = [
@@ -39,6 +42,35 @@ class FormHasPaymentsExtension extends Extension
     private static array $cascade_deletes = [
         'PaymentRules',
     ];
+
+    /**
+     * When `Gateway` is empty, use the first entry from configured allowed gateways.
+     */
+    public function getEffectiveGateway(): string
+    {
+        return static::getEffectiveGatewayFor($this->owner);
+    }
+
+    /**
+     * @param \SilverStripe\ORM\DataObject|null $parent Usually the form block (e.g. ElementForm).
+     */
+    public static function getEffectiveGatewayFor($parent): string
+    {
+        if (!$parent) {
+            $supported = GatewayInfo::getSupportedGateways(false);
+
+            return array_key_first($supported);
+        }
+
+        $configured = $parent->Gateway ?? '';
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        $supported = GatewayInfo::getSupportedGateways(false);
+
+        return array_key_first($supported);
+    }
 
     /**
      * Generate a {@link GridFieldConfig} config for editing filter rules
@@ -118,6 +150,14 @@ class FormHasPaymentsExtension extends Extension
                     ),
                 ]
             ),
+            DropdownField::create(
+                'Gateway',
+                _t(__CLASS__ . '.Gateway', 'Payment gateway'),
+                $this->getGatewayDropdownSource()
+            )->setDescription(_t(
+                __CLASS__ . '.GatewayDescription',
+                'Leave as default to use the first gateway configured under Payment.allowed_gateways.'
+            )),
             TextField::create('CurrencyCode', 'Currency Code')->setDescription('ISO 4217 currency code, e.g. USD, EUR, GBP, etc.')
                 ->setAttribute('placeholder', 'USD'),
             $grid,
@@ -128,5 +168,16 @@ class FormHasPaymentsExtension extends Extension
             ->setTitle(_t(__CLASS__ . '.PaymentsTab', 'Payment Rules'));
 
         return $fields;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function getGatewayDropdownSource(): array
+    {
+        $gateways = GatewayInfo::getSupportedGateways(false);
+        $label = _t(__CLASS__ . '.GatewayDefault', 'Default (first configured gateway)');
+
+        return ['' => $label] + $gateways;
     }
 }

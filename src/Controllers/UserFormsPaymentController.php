@@ -2,6 +2,9 @@
 
 namespace A2nt\UserFormsPayments\Controllers;
 
+use A2nt\UserFormsPayments\Extensions\FormHasPaymentsExtension;
+use A2nt\UserFormsPayments\Service\PaymentProcessorFactory;
+use A2nt\UserFormsPayments\Service\StripeCheckoutPaymentProcessor;
 use Exception;
 use SilverStripe\CMS\Controllers\ContentController;
 use SilverStripe\Control\Controller;
@@ -14,7 +17,6 @@ use SilverStripe\Forms\Validation\RequiredFieldsValidator;
 use SilverStripe\Omnipay\GatewayFieldsFactory;
 use SilverStripe\Omnipay\GatewayInfo;
 use SilverStripe\Omnipay\Model\Payment;
-use SilverStripe\Omnipay\Service\ServiceFactory;
 use SilverStripe\UserForms\Model\Submission\SubmittedForm;
 
 class UserFormsPaymentController extends ContentController
@@ -41,7 +43,7 @@ class UserFormsPaymentController extends ContentController
 
     private ?SubmittedForm $object = null;
 
-    protected function getShortPayableObjectName(string $class): string|false
+    public function getShortPayableObjectName(string $class): string|false
     {
         /** @var array<string, class-string> $allowed */
         $allowed = static::config()->get('allowed_objects');
@@ -127,11 +129,25 @@ class UserFormsPaymentController extends ContentController
             return $this->httpError(404);
         }
 
-        // direct the user to the thank you page on the submitted form pa
+        $sessionId = $this->request->getVar('session_id');
+        if (is_string($sessionId) && $sessionId !== '') {
+            return StripeCheckoutPaymentProcessor::completeCheckoutSession($this, $obj, $sessionId);
+        }
+
+        $payment = Payment::get()->filter([
+            'SubmittedFormID' => $obj->ID,
+            'Status' => 'Captured',
+        ])->first();
+
+        if (!$payment) {
+            return $this->redirect($this->Link('canceled') . '/' . $this->getShortPayableObjectName($obj::class) . '/' . $obj->ID);
+        }
+
         $page = $obj->Parent();
 
         return $this->redirect($page->Link('finished'));
     }
+
 
     public function canceled()
     {
@@ -161,7 +177,7 @@ class UserFormsPaymentController extends ContentController
             return $this->httpError(404);
         }
 
-        $gateway = $this->getGateway();
+        $gateway = $this->getGateway($obj);
 
         if (GatewayInfo::isOffsite($gateway)) {
             if ((float) $obj->Amount <= 0) {
@@ -178,9 +194,13 @@ class UserFormsPaymentController extends ContentController
     }
 
 
-    protected function getGateway(): string
+    public function getGateway(?SubmittedForm $obj = null): string
     {
-        $gateways = GatewayInfo::getSupportedGateways();
+        if ($obj) {
+            return FormHasPaymentsExtension::getEffectiveGatewayFor($obj->Parent());
+        }
+
+        $gateways = GatewayInfo::getSupportedGateways(false);
 
         return array_key_first($gateways);
     }
@@ -194,7 +214,7 @@ class UserFormsPaymentController extends ContentController
             return $this->httpError(404);
         }
 
-        $gateway = $this->getGateway();
+        $gateway = $this->getGateway($obj);
         switch ($gateway) {
             case 'PayPal_Express':
                 if (!$obj) {
@@ -233,38 +253,11 @@ class UserFormsPaymentController extends ContentController
      */
     protected function processPayment(SubmittedForm $obj, array $data = [])
     {
-        $gateway = $this->getGateway();
+        $gateway = $this->getGateway($obj);
 
-        $payment = Payment::create()
-            ->init($gateway, $obj->Amount, $obj->CurrencyCode ?? static::config()->get('default_currency_code'))
-            ->setSuccessUrl($this->Link('complete') . '/' . $this->getShortPayableObjectName($obj::class) . '/' . $obj->ID)
-            ->setFailureUrl($this->Link('canceled') . '/' . $this->getShortPayableObjectName($obj::class) . '/' . $obj->ID);
-
-        $payment->setField('SubmittedFormID', $obj->ID);
-        $payment->write();
-
-        $items = $obj->getPaymentItems();
-
-        if ($items) {
-            $data['items'] = $items;
-        } else {
-            $data['description'] = $obj->Title;
-            $data['statement_descriptor'] = $obj->Title;
-        }
-
-        $data['rp_invoice_id'] = $obj->OrderID;
-        $data['custom'] = $obj->OrderID;
-        $data['invoice'] = $obj->OrderID;
-
-        $this->extend('updateProcessPaymentData', $data, $obj);
-
-        $service = ServiceFactory::create()
-            ->getService($payment, static::config()->get('payment_intent') ?? ServiceFactory::INTENT_PURCHASE);
-
-        $response = $service->initiate($data);
-
-        return $response->redirectOrRespond();
+        return PaymentProcessorFactory::create($gateway)->process($obj, $this, $data);
     }
+
 
     /**
      * @param array<string, mixed> $data

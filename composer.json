@@ -21,7 +21,8 @@
         "silverstripe/userforms": "^7",
         "dnadesign/silverstripe-elemental-userforms": "^5",
         "silverstripe/silverstripe-omnipay": "^6",
-        "php-http/guzzle7-adapter": "^1.1"
+        "php-http/guzzle7-adapter": "^1.1",
+        "stripe/stripe-php": "^13 || ^14"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",

@@ -165,21 +165,16 @@ class SubmittedFormExtension extends Extension
         $readOnlyFields = ['OrderID', 'Amount', 'PaymentStatus', 'CurrencyCode'];
 
         foreach ($readOnlyFields as $key) {
-            $fields
-                ->dataFieldByName($key)
-                ->setReadonly(true);
+            $fields->makeFieldReadonly($key);
         }
 
-        // if the order is unpaid, add a link with the payment link
-        if ($this->owner->PaymentStatus === 'Unpaid') {
-            $fields->insertAfter(
-                'PaymentStatus',
-                LiteralField::create(
-                    'PaymentLink',
-                    sprintf('<p><a target="_blank" href="%s">Pay for this order</a></p>', $this->getPaymentLink())
-                ),
-            );
-        }
+        $fields->insertAfter(
+            'PaymentStatus',
+            LiteralField::create(
+                'PaymentLink',
+                sprintf('<p><a target="_blank" href="%s">Pay for this order</a></p>', $this->getPaymentLink())
+            ),
+        );
 
         return $fields;
     }
